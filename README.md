@@ -91,7 +91,6 @@ PartitionName=batch Nodes=ALL Default=YES MaxTime=INFINITE State=UP
 --------------------------------
 
 # cgroup.conf file
-CgroupAutomount=yes
 CgroupMountpoint=/sys/fs/cgroup
 ConstrainCores=yes
 ConstrainRAMSpace=yes
@@ -136,6 +135,53 @@ export SLURMUSER=1002
 sudo groupadd -g $SLURMUSER slurm
 sudo useradd -m -c "SLURM workload manager" -d /var/lib/slurm -u $SLURMUSER -g slurm -s /bin/bash slurm
 sudo apt-get install -y munge
+sudo apt-get update
+cp munge.key /etc/munge/  #Munge key has to be copied to current loc from master
+sudo chown munge:munge /etc/munge/munge.key
+sudo chmod 400 /etc/munge/munge.key
+sudo systemctl enable munge
+sudo systemctl start munge
+sudo apt-get update
+sudo apt-get install build-essential fakeroot devscripts libmunge-dev libmunge2 munge
+sudo apt upgrade
+mkdir slurm
+cd slurm
+wget https://download.schedmd.com/slurm/slurm-23.11.8.tar.bz2
+tar -xaf slurm-23.11.8.tar.bz2
+cd slurm-23.11.8/
+sudo apt install libswitch-perl equivs mk-build-deps
+sudo apt install equivs
+sudo mk-build-deps -i debian/control
+debuild -b -uc -us
+cd ..
+sudo dpkg -i slurm-*.deb
+sudo mkdir -p /etc/slurm
+cd /etc/slurm
+nano slurm.conf #copy content from Master
+nano cgroup.conf #Copy content from master
+sudo chown -R slurm:slurm /var/spool/slurmctld
+sudo chown -R slurm:slurm /var/spool/slurmd
+sudo chown -R slurm:slurm /var/log/slurm
+sudo chown -R slurm:slurm /var/lib/slurm
+sudo chmod -R 755 /var/spool/slurmctld
+sudo chmod -R 755 /var/spool/slurmd
+sudo chmod -R 755 /var/log/slurm
+sudo chmod -R 755 /var/lib/slurm
+mkdir /var/spool/slurmd 
+chown slurm: /var/spool/slurmd
+chmod 755 /var/spool/slurmd
+mkdir /var/log/slurm/
+touch /var/log/slurm/slurmd.log
+chown -R slurm:slurm /var/log/slurm/slurmd.log
+chmod 755 /var/log/slurm
+mkdir /run/slurm
+touch /run/slurm/slurmd.pid 
+chown slurm /run/slurm
+chown slurm:slurm /run/slurm
+chmod -R 770 /run/slurm
+systemctl enable slurmd.service 
+systemctl start slurmd.service 
+systemctl status slurmd.service
 
 
 
